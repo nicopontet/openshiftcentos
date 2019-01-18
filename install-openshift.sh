@@ -9,7 +9,7 @@ export DOMAIN=${DOMAIN:="$(curl -s ipinfo.io/ip).nip.io"}
 export USERNAME=${USERNAME:="$(whoami)"}
 export PASSWORD=${PASSWORD:=password}
 export VERSION=${VERSION:="3.11"}
-export SCRIPT_REPO=${SCRIPT_REPO:="https://raw.githubusercontent.com/gshipley/installcentos/master"}
+export SCRIPT_REPO=${SCRIPT_REPO:="https://raw.githubusercontent.com/nicopontet/openshiftcentos/master"}
 export IP=${IP:="$(ip route get 8.8.8.8 | awk '{print $NF; exit}')"}
 export API_PORT=${API_PORT:="8443"}
 
@@ -42,7 +42,7 @@ if [ "$INTERACTIVE" = "true" ]; then
 	read -rp "API Port: ($API_PORT): " choice;
 	if [ "$choice" != "" ] ; then
 		export API_PORT="$choice";
-	fi 
+	fi
 
 	echo
 
@@ -74,7 +74,7 @@ yum -y install epel-release
 # Disable the EPEL repository globally so that is not accidentally used during later steps of the installation
 sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
 
-systemctl | grep "NetworkManager.*running" 
+systemctl | grep "NetworkManager.*running"
 if [ $? -eq 1 ]; then
 	systemctl start NetworkManager
 	systemctl enable NetworkManager
@@ -91,12 +91,12 @@ yum -y --enablerepo=epel install ansible.rpm
 cd openshift-ansible && git fetch && git checkout release-${VERSION} && cd ..
 
 cat <<EOD > /etc/hosts
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-${IP}		$(hostname) console console.${DOMAIN}  
+${IP}		$(hostname) ${DOMAIN}
 EOD
 
-if [ -z $DISK ]; then 
+if [ -z $DISK ]; then
 	echo "Not setting the Docker storage."
 else
 	cp /etc/sysconfig/docker-storage-setup /etc/sysconfig/docker-storage-setup.bk
@@ -167,10 +167,10 @@ if [ "$PVS" = "true" ]; then
 	for i in `seq 1 200`;
 	do
 		DIRNAME="vol$i"
-		mkdir -p /mnt/data/$DIRNAME 
+		mkdir -p /mnt/data/$DIRNAME
 		chcon -Rt svirt_sandbox_file_t /mnt/data/$DIRNAME
 		chmod 777 /mnt/data/$DIRNAME
-		
+
 		sed "s/name: vol/name: vol$i/g" vol.yaml > oc_vol.yaml
 		sed -i "s/path: \/mnt\/data\/vol/path: \/mnt\/data\/vol$i/g" oc_vol.yaml
 		oc create -f oc_vol.yaml
@@ -180,13 +180,13 @@ if [ "$PVS" = "true" ]; then
 fi
 
 echo "******"
-echo "* Your console is https://console.$DOMAIN:$API_PORT"
+echo "* Your console is https://$DOMAIN:$API_PORT"
 echo "* Your username is $USERNAME "
 echo "* Your password is $PASSWORD "
 echo "*"
 echo "* Login using:"
 echo "*"
-echo "$ oc login -u ${USERNAME} -p ${PASSWORD} https://console.$DOMAIN:$API_PORT/"
+echo "$ oc login -u ${USERNAME} -p ${PASSWORD} https://$DOMAIN:$API_PORT/"
 echo "******"
 
-oc login -u ${USERNAME} -p ${PASSWORD} https://console.$DOMAIN:$API_PORT/
+oc login -u ${USERNAME} -p ${PASSWORD} https://$DOMAIN:$API_PORT/
